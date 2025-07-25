@@ -1,0 +1,83 @@
+<%- include('partials/header', { user: { _id: userId } }) %>
+<div class="container mt-4">
+  <a href="/">← Quay lại</a>
+  <h2>Chat với: <%= friend.displayName || friend.username %></h2>
+  <form method="post" action="/chat/<%= friend._id %>/upload" enctype="multipart/form-data">
+    <input type="file" name="image" accept="image/*" required>
+    <button class="btn btn-secondary btn-sm">Gửi ảnh</button>
+  </form>
+  <div id="chat-box" style="height:300px;overflow-y:auto;">
+    <% messages.forEach(msg => { %>
+      <div class="message <%= msg.from._id.equals(userId) ? 'message-own' : '' %>" data-msgid="<%= msg._id %>">
+        <b><%= msg.from.displayName || msg.from.username %>:</b>
+        <% if (msg.content) { %>
+          <span><%= msg.content %></span>
+        <% } %>
+        <% if (msg.image) { %>
+          <br><img src="/uploads/<%= msg.image %>" style="max-width:100px;max-height:100px;">
+        <% } %>
+        <br>
+        <small>Đã xem: 
+        <% (msg.seenBy || []).forEach(uid => { 
+          let u = null;
+          if (friend._id.equals(uid)) u = friend;
+          if (userId == uid) u = { displayName: "Bạn" };
+          if (u) { %>
+            <%= u.displayName || u.username %>,
+          <% } 
+        }) %>
+        </small>
+      </div>
+    <% }) %>
+  </div>
+  <div class="input-group mt-2">
+    <input id="msg" class="form-control" autocomplete="off" placeholder="Nhập tin nhắn...">
+    <button id="btnSend" class="btn btn-primary btn-sm" type="button">Gửi</button>
+  </div>
+  <script>
+    const socket = io();
+    const userId = "<%= userId %>";
+    const friendId = "<%= friend._id %>";
+    const username = "Bạn";
+    socket.emit('join-private', { userId, friendId });
+
+    document.getElementById('btnSend').onclick = send;
+    document.getElementById('msg').addEventListener('keydown', function(e){
+      if(e.key === 'Enter') { send(); }
+    });
+    function send() {
+      const msg = document.getElementById('msg').value.trim();
+      if (!msg) return;
+      socket.emit('private-message', {
+        from: userId,
+        to: friendId,
+        message: msg,
+        username
+      });
+      document.getElementById('msg').value = '';
+    }
+    socket.on('private-message', ({ _id, username: userSend, message, from, seenBy }) => {
+      const box = document.getElementById('chat-box');
+      const html = `
+      <div class="message ${from === userId ? 'message-own' : ''}" data-msgid="${_id}">
+        <b>${userSend}:</b> <span>${message}</span><br>
+        <small>Đã xem: ${seenBy.length}</small>
+      </div>`;
+      box.innerHTML += html;
+      box.scrollTop = box.scrollHeight;
+    });
+    function sendSeen() {
+      document.querySelectorAll('.message').forEach(div => {
+        const msgId = div.dataset.msgid;
+        if (msgId) socket.emit('seen-private-message', { messageId: msgId, userId, friendId });
+      });
+    }
+    document.getElementById('chat-box').addEventListener('mouseenter', sendSeen);
+    document.getElementById('chat-box').addEventListener('focus', sendSeen);
+    window.onload = function() {
+      const box = document.getElementById('chat-box');
+      box.scrollTop = box.scrollHeight;
+    };
+  </script>
+</div>
+<%- include('partials/footer') %>

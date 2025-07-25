@@ -1,0 +1,93 @@
+<%- include('partials/header', { user: { _id: userId } }) %>
+<div class="container mt-4">
+  <a href="/">← Quay lại</a>
+  <h2>Nhóm: <%= group.name %></h2>
+  <ul>
+    <% group.members.forEach(m => { %>
+      <li>
+        <%= m.displayName || m.username %>
+        <% if (group.owner._id.equals(userId) && !m._id.equals(userId)) { %>
+          <form method="post" action="/group/<%= group._id %>/kick" style="display:inline">
+            <input type="hidden" name="userId" value="<%= m._id %>">
+            <button class="btn btn-danger btn-sm">Đuổi</button>
+          </form>
+        <% } %>
+      </li>
+    <% }) %>
+  </ul>
+  <form method="post" action="/group/<%= group._id %>/invite">
+    <input class="form-control" name="username" placeholder="Tên người dùng">
+    <button class="btn btn-info btn-sm mt-1">Mời</button>
+  </form>
+  <form method="post" action="/group/<%= group._id %>/upload" enctype="multipart/form-data">
+    <input type="file" name="image" accept="image/*" required>
+    <button class="btn btn-secondary btn-sm">Gửi ảnh</button>
+  </form>
+  <div id="chat-box" style="height:300px;overflow-y:auto;">
+    <% messages.forEach(msg => { %>
+      <div class="message <%= msg.sender._id.equals(userId) ? 'message-own' : '' %>" data-msgid="<%= msg._id %>">
+        <b><%= msg.sender.displayName || msg.sender.username %>:</b>
+        <% if (msg.content) { %>
+          <span><%= msg.content %></span>
+        <% } %>
+        <% if (msg.image) { %>
+          <br><img src="/uploads/<%= msg.image %>" style="max-width:100px;max-height:100px;">
+        <% } %>
+        <br>
+        <small>Đã xem: 
+        <% (msg.seenBy || []).forEach(uid => { 
+          const m = group.members.find(m => m._id.equals(uid));
+          if (m) { %>
+            <%= m.displayName || m.username %>,
+          <% } 
+        }) %>
+        </small>
+      </div>
+    <% }) %>
+  </div>
+  <div class="input-group mt-2">
+    <input id="msg" class="form-control" autocomplete="off" placeholder="Nhập tin nhắn...">
+    <button id="btnSend" class="btn btn-primary btn-sm" type="button">Gửi</button>
+  </div>
+  <script>
+    const socket = io();
+    const groupId = "<%= group._id %>";
+    const userId = "<%= userId %>";
+    const username = "<%= group.members.find(m => m._id.equals(userId)).displayName || group.members.find(m => m._id.equals(userId)).username %>";
+    socket.emit('join-group', groupId);
+
+    document.getElementById('btnSend').onclick = send;
+    document.getElementById('msg').addEventListener('keydown', function(e){
+      if(e.key === 'Enter') { send(); }
+    });
+    function send() {
+      const msg = document.getElementById('msg').value.trim();
+      if (!msg) return;
+      socket.emit('group-message', { groupId, userId, username, message: msg });
+      document.getElementById('msg').value = '';
+    }
+    socket.on('group-message', ({ _id, username: userSend, message, userId: senderId, seenBy }) => {
+      const box = document.getElementById('chat-box');
+      const html = `
+      <div class="message ${senderId === userId ? 'message-own' : ''}" data-msgid="${_id}">
+        <b>${userSend}:</b> <span>${message}</span><br>
+        <small>Đã xem: ${seenBy.length}</small>
+      </div>`;
+      box.innerHTML += html;
+      box.scrollTop = box.scrollHeight;
+    });
+    function sendSeen() {
+      document.querySelectorAll('.message').forEach(div => {
+        const msgId = div.dataset.msgid;
+        if (msgId) socket.emit('seen-group-message', { groupId, messageId: msgId, userId });
+      });
+    }
+    document.getElementById('chat-box').addEventListener('mouseenter', sendSeen);
+    document.getElementById('chat-box').addEventListener('focus', sendSeen);
+    window.onload = function() {
+      const box = document.getElementById('chat-box');
+      box.scrollTop = box.scrollHeight;
+    };
+  </script>
+</div>
+<%- include('partials/footer') %>

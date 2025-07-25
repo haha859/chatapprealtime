@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Chat App</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    .message-own { background: #e6f7ff; padding:5px; border-radius:5px; }
+    .message { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">ChatApp</a>
+    <% if (user && user._id) { %>
+      <div>Xin chào, <%= user.displayName || user.username %></div>
+    <% } %>
+  </div>
+</nav>

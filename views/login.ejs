@@ -1,0 +1,14 @@
+<%- include('partials/header', { user: null }) %>
+<div class="container mt-4">
+  <h2>Đăng nhập</h2>
+  <% if (typeof msg !== 'undefined') { %>
+    <div class="alert alert-danger"><%= msg %></div>
+  <% } %>
+  <form method="post" action="/login">
+    <input name="username" class="form-control mb-2" placeholder="Tên đăng nhập" required>
+    <input name="password" type="password" class="form-control mb-2" placeholder="Mật khẩu" required>
+    <button class="btn btn-primary">Đăng nhập</button>
+    <a href="/register" class="btn btn-link">Đăng ký</a>
+  </form>
+</div>
+<%- include('partials/footer') %>

@@ -1,0 +1,53 @@
+<%- include('partials/header', { user }) %>
+<div class="container mt-4">
+  <h2>Xin chào, <%= user.displayName || user.username %>!</h2>
+  <a href="/logout" class="btn btn-secondary btn-sm">Đăng xuất</a>
+  <a href="/profile" class="btn btn-info btn-sm">Hồ sơ cá nhân</a>
+  <h4 class="mt-3">Bạn bè</h4>
+  <ul>
+    <% (user.friends || []).forEach(f => { %>
+      <li>
+        <a href="/chat/<%= f._id %>"><%= f.displayName || f.username %></a>
+        <form method="post" action="/unfriend" style="display:inline">
+          <input type="hidden" name="friendId" value="<%= f._id %>">
+          <button class="btn btn-danger btn-sm">Xóa bạn</button>
+        </form>
+      </li>
+    <% }) %>
+  </ul>
+  <form method="post" action="/add_friend" class="form-inline">
+    <input name="username" class="form-control" placeholder="Thêm bạn (username)">
+    <button class="btn btn-success btn-sm">Gửi lời mời</button>
+  </form>
+  <a class="btn btn-warning btn-sm mt-2" href="/friend_requests">Lời mời kết bạn</a>
+
+  <h4 class="mt-3">Nhóm của bạn</h4>
+  <ul>
+    <% (groups || []).forEach(g => { %>
+      <li>
+        <a href="/group/<%= g._id %>"><%= g.name %></a>
+        <% if (user.pinnedGroups && user.pinnedGroups.some(pg => String(pg._id || pg) === String(g._id))) { %>
+          <form action="/group/<%= g._id %>/unpin" method="post" style="display:inline"><button class="btn btn-link btn-sm">Bỏ ghim</button></form>
+        <% } else { %>
+          <form action="/group/<%= g._id %>/pin" method="post" style="display:inline"><button class="btn btn-link btn-sm">Ghim</button></form>
+        <% } %>
+        <% if (user.hiddenGroups && user.hiddenGroups.some(hg => String(hg._id || hg) === String(g._id))) { %>
+          <form action="/group/<%= g._id %>/unhide" method="post" style="display:inline"><button class="btn btn-link btn-sm">Hiện nhóm</button></form>
+        <% } else { %>
+          <form action="/group/<%= g._id %>/hide" method="post" style="display:inline"><button class="btn btn-link btn-sm">Ẩn nhóm</button></form>
+        <% } %>
+      </li>
+    <% }) %>
+  </ul>
+  <h5 class="mt-3">Tạo nhóm mới</h5>
+  <form method="post" action="/create_group">
+    <input name="groupName" class="form-control mb-1" placeholder="Tên nhóm" required>
+    <select name="members" class="form-control mb-1" multiple required>
+      <% (user.friends || []).forEach(f => { %>
+        <option value="<%= f._id %>"><%= f.displayName || f.username %></option>
+      <% }) %>
+    </select>
+    <button class="btn btn-primary btn-sm">Tạo nhóm</button>
+  </form>
+</div>
+<%- include('partials/footer') %>

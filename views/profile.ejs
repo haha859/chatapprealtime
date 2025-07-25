@@ -1,0 +1,10 @@
+<%- include('partials/header', { user }) %>
+<div class="container mt-4">
+  <h2>Hồ sơ cá nhân</h2>
+  <form method="post" action="/profile/displayname">
+    <label>Đổi tên hiển thị:</label>
+    <input name="displayName" class="form-control mb-2" value="<%= user.displayName || user.username %>">
+    <button class="btn btn-primary btn-sm">Lưu</button>
+  </form>
+</div>
+<%- include('partials/footer') %>
